@@ -1,4 +1,4 @@
-# v0.0.5
+# v0.0.6
 # =================================================================================================
 # v0.X.X  - MAIN TEST BUILD (DEBUGING);
 # v2.X.X  - major functionality update;
@@ -41,3 +41,14 @@ def main():
         print(f"[❌] Помилка під час зчитування вхідного файлу: {e}")
         sys.exit(1) # EXIT 1 (if there is trouble to read file)
 
+    print("\n[🔍] Спроба відновлення тексту...")
+    final_recovered_text = restorer.restore_text(corrupted_text)
+    print(f"\nВідновлений текст:\n{final_recovered_text}")
+
+    # Save result to output file:
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        f.write(final_recovered_text)
+    print(f"\n[💾] Відновлений текст збережено у файл '{output_filename}'")
+
+if __name__ == "__main__":
+    main()
