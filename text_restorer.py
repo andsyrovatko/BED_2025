@@ -3,7 +3,7 @@ from vocabulary_mgr import VocabularyManager
 class TextRestorer:
     def __init__(self, vocabulary_path):
         self.vocabulary_mgr = VocabularyManager(vocabulary_path)
-        self.most_frequent_letters = self.dictionary_manager.get_most_frequent_letters()
+        self.most_frequent_letters = self.vocabulary_mgr.get_most_frequent_letters()
 
     # Main text restore function.
     def restore_text(self, corrupted_text):
@@ -51,7 +51,7 @@ class TextRestorer:
         segment_len = len(segment)
 
         # Get all words from a dictionary of a given length
-        candidate_words_by_length = self.dictionary_manager.get_words_by_length(segment_len)
+        candidate_words_by_length = self.vocabulary_mgr.get_words_by_length(segment_len)
 
         known_chars_in_segment = [c for c in segment if c != '*']
         unknown_char_count = segment.count('*')
