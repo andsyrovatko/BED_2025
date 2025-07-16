@@ -1,3 +1,10 @@
+# v0.0.2
+# =================================================================================================
+# v0.X.X  - MAIN TEST BUILD (DEBUGING);
+# v2.X.X  - major functionality update;
+# vX.2.X  - minor functionality update;
+# vX.X.3a - patch functionality update, as bug or error fixing (states: a - alpha, b - beta, r - release)
+# =================================================================================================
 import sys
 import os
 from text_restorer import TextRestorer
