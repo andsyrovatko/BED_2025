@@ -1,4 +1,4 @@
-# v0.0.4
+# v0.0.5
 # =================================================================================================
 # v0.X.X  - MAIN TEST BUILD (DEBUGING);
 # v2.X.X  - major functionality update;
@@ -26,5 +26,18 @@ def main():
     restorer = TextRestorer(vocabulary_path)
     print("[✅] Словник завантажено.")
 
-    # Read corrupted text
+    # Read corrupted text (from file)
     corrupted_text = ""
+    try:
+        with open(input_text_filename, 'r', encoding='utf-8') as f:
+            corrupted_text = f.read().strip()
+        print(f"\n[📄] Вхідний текст успішно зчитано з файлу '{input_text_filename}'")
+        print(f"Пошкоджений текст (перші 100 символів): {corrupted_text[:100]}...")
+    except FileNotFoundError:
+        print(f"[❌] Помилка: Вхідний файл '{input_text_filename}' не знайдено.")
+        print(f"Будь ласка, створіть файл '{input_text_filename}' у тій же директорії та вставте туди пошкоджений текст.")
+        sys.exit(1) # EXIT 1 (if there is no file))
+    except Exception as e:
+        print(f"[❌] Помилка під час зчитування вхідного файлу: {e}")
+        sys.exit(1) # EXIT 1 (if there is trouble to read file)
+

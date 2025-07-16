@@ -42,7 +42,32 @@ class TextRestorer:
                 recovered_parts.append(corrupted_text[current_pos])
                 current_pos += 1
 
+        # Recover string using 'space' as separate
         return " ".join(recovered_parts)
 
-#    def _find_possible_words(self, segment):
+    # Function to find all posible words
+    def _find_possible_words(self, segment):
+        possible_words = []
+        segment_len = len(segment)
 
+        # Get all words from a dictionary of a given length
+        candidate_words_by_length = self.dictionary_manager.get_words_by_length(segment_len)
+
+        known_chars_in_segment = [c for c in segment if c != '*']
+        unknown_char_count = segment.count('*')
+
+        for dict_word in candidate_words_by_length:
+            # Check for a direct match with '*'
+            is_match = True
+            for i, char_in_segment in enumerate(segment):
+                if char_in_segment != '*' and char_in_segment != dict_word[i]:
+                    is_match = False
+                    break
+            if is_match:
+                possible_words.append(dict_word)
+
+        if unknown_char_count > 0 or len(known_chars_in_segment) > 0:
+            pass # N-gramm update (for the future)
+
+        # Return the found words or the original segment
+        return possible_words if possible_words else [segment]
