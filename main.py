@@ -26,6 +26,16 @@ def main():
     restorer = TextRestorer(vocabulary_path)
     print("[✅] Словник завантажено.")
 
+    # Use corpus if exist.
+    corpus_path = os.path.join(os.path.dirname(__file__), 'corpus_text.txt')
+    if os.path.exists(corpus_path):
+        with open(corpus_path, 'r', encoding='utf-8') as corpus_file:
+            corpus_text = corpus_file.read()
+            restorer.vocabulary_mgr.calculate_bigrams(corpus_text)
+        print("[📚] Корпус для біграм завантажено.")
+    else:
+        print("[ℹ️] Увага: файл 'corpus_text.txt' не знайдено. Біграми не будуть використовуватись.")
+
     # Read corrupted text (from file)
     corrupted_text = ""
     try:

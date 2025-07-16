@@ -1,3 +1,4 @@
+import difflib
 from vocabulary_mgr import VocabularyManager
 
 class TextRestorer:
@@ -7,67 +8,138 @@ class TextRestorer:
 
     # Main text restore function.
     def restore_text(self, corrupted_text):
-        corrupted_text = corrupted_text.lower() # Se to lower_case
+        corrupted_text = corrupted_text.lower()
+        recovered_words = []
+        segments = corrupted_text.split('*')
+        segments = [seg for seg in segments if seg]
 
-        # Search the longest word
-        recovered_parts = []
-        current_pos = 0
-        text_length = len(corrupted_text)
-
-        while current_pos < text_length:
-            best_word = None
-            best_word_len = 0
-
-            # Limit the length to avoid excessive calculations
-            max_search_length = min(20, text_length - current_pos + 1)
-
-            # Trying to find a word by going through the possible lengths from longest to shortest to find the best match.
-            for length in range(max_search_length, 0, -1):
-                segment = corrupted_text[current_pos : current_pos + length]
-
-                # Looking for direct matches or with asterisks.
-                found_words = self._find_possible_words(segment)
-
+        for seg in segments:
+            # For long segments, perform an in-depth search
+            if len(seg) > 15:
+                words_in_seg = self._restore_from_long_segment(seg)
+                recovered_words.extend(words_in_seg)
+            else:
+                found_words = self._find_possible_words(seg)
                 if found_words:
-                    # For simplicity, we will take the first word found (in future should be an N-gram-based selection).
-                    best_word = found_words[0]
-                    best_word_len = len(best_word)
-                    break # Found the longest word, let's move on
+                    best_word = max(found_words, key=self._score_word_by_letter_frequency)
+                    recovered_words.append(best_word)
+                else:
+                    # If the word is not found, add the original
+                    recovered_words.append(seg)
+
+        return " ".join(recovered_words)
+
+    def _restore_from_long_segment(self, segment):
+        recovered_parts = []
+        pos = 0
+        length = len(segment)
+
+        previous_word = None
+
+        while pos < length:
+            best_word = None
+            best_len = 0
+            best_score = -1
+            max_len = min(20, length - pos)
+
+            for l in range(max_len, 0, -1):
+                subseg = segment[pos:pos + l]
+                candidates = self._find_possible_words(subseg)
+
+                # If there are no exact words, try a fuzzy search
+                if not candidates:
+                    candidates = self._find_fuzzy_words(subseg, max_dist=2)
+
+                for word in candidates:
+                    score = self._score_word_by_letter_frequency(word)
+                    if previous_word:
+                        bigram_score = self.vocabulary_mgr.get_bigram_frequency(previous_word, word)
+                        if bigram_score > 0:
+                            score += 2000 * (bigram_score / (1 + len(word)))
+                        else:
+                            score -= 100
+
+                    if self.vocabulary_mgr.is_word(word):
+                        score += 500
+                    else:
+                        score -= 1000
+
+                    if score > best_score:
+                        best_word = word
+                        best_score = score
+                        best_len = l
+
+                if best_word and best_len > 1:
+                    break
 
             if best_word:
                 recovered_parts.append(best_word)
-                current_pos += best_word_len
+                previous_word = best_word
+                pos += best_len
             else:
-                # If the word is not found, it may be an error or a very corrupted fragment.
-                recovered_parts.append(corrupted_text[current_pos])
-                current_pos += 1
+                # If the word is not found, skip 1 character
+                pos += 1
 
-        # Recover string using 'space' as separate
-        return " ".join(recovered_parts)
+        return recovered_parts
 
-    # Function to find all posible words
+    def _score_word_by_letter_frequency(self, word):
+        return sum(self.vocabulary_mgr.letter_frequencies.get(c, 0) for c in word)
+
     def _find_possible_words(self, segment):
         possible_words = []
         segment_len = len(segment)
 
-        # Get all words from a dictionary of a given length
         candidate_words_by_length = self.vocabulary_mgr.get_words_by_length(segment_len)
 
-        known_chars_in_segment = [c for c in segment if c != '*']
-        unknown_char_count = segment.count('*')
-
         for dict_word in candidate_words_by_length:
-            # Check for a direct match with '*'
             is_match = True
             for i, char_in_segment in enumerate(segment):
-                if char_in_segment != '*' and char_in_segment != dict_word[i]:
+                if char_in_segment != dict_word[i]:
                     is_match = False
                     break
             if is_match:
                 possible_words.append(dict_word)
 
-        if unknown_char_count > 0 or len(known_chars_in_segment) > 0:
-            pass # N-gramm update (for the future)
+        if possible_words:
+            print(f"[DEBUG] Для сегмента '{segment}' знайдено слова: {possible_words[:5]} ...")
+        else:
+            print(f"[DEBUG] Для сегмента '{segment}' не знайдено слів")
 
-        # Return the found words or the original segment
-        return possible_words if possible_words else [segment]
+        return possible_words
+
+    def _find_fuzzy_words(self, segment, max_dist=2):
+        length = len(segment)
+        candidates = []
+        # Let's take words of length length-1, length, length+1
+        for length_diff in range(-1, 2):
+            words_of_length = self.vocabulary_mgr.get_words_by_length(length + length_diff)
+            candidates.extend(words_of_length)
+
+        close_words = []
+        for word in candidates:
+            dist = self._levenshtein_distance(segment, word)
+            if dist <= max_dist:
+                close_words.append(word)
+
+        if close_words:
+            print(f"[DEBUG] Для сегмента '{segment}' знайдено fuzzy-слова: {close_words[:5]} ...")
+        else:
+            print(f"[DEBUG] Для сегмента '{segment}' fuzzy-слова не знайдено")
+
+        return close_words
+
+    def _levenshtein_distance(self, a, b):
+        if len(a) < len(b):
+            return self._levenshtein_distance(b, a)
+        if len(b) == 0:
+            return len(a)
+        previous_row = range(len(b) + 1)
+        for i, c1 in enumerate(a):
+            current_row = [i + 1]
+            for j, c2 in enumerate(b):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        return previous_row[-1]

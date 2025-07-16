@@ -46,10 +46,11 @@ class VocabularyManager:
         return sorted(self.letter_frequencies, key=self.letter_frequencies.get, reverse=True)
 
     # Functions for N-grams can be added here if we decide to use them for evaluation (for the FUTURE)
-    # def calculate_bigrams(self, corpus_text):
-    #     words = corpus_text.split()
-    #     for i in range(len(words) - 1):
-    #         self.bigrams[(words[i], words[i+1])] += 1
-    #
-    # def get_bigram_frequency(self, word1, word2):
-    #     return self.bigrams[(word1, word2)]
+    def calculate_bigrams(self, corpus_text):
+        words = corpus_text.split()
+        for i in range(len(words) - 1):
+            self.bigrams[(words[i], words[i+1])] += 1
+            # print("[DEBUG] Біграми:", list(self.bigrams.items()))
+
+    def get_bigram_frequency(self, word1, word2):
+        return self.bigrams[(word1, word2)]
