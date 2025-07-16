@@ -9,7 +9,7 @@ class VocabularyManager:
         self.words = set()
         # Using collections for harder situation (use N-gram)
         self.letter_frequencies = collections.defaultdict(int)
-        self.bigrams = collections.defaultdict(int) # Для N-грам (слово1, слово2) -> частота
+        self.bigrams = collections.defaultdict(int) # For N-gram (word1, word2) -> freq.
         self._load_vocabulary(vocabulary_path)
 
     def _load_vocabulary(self, path):
