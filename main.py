@@ -1,3 +1,10 @@
+# v0.0.7
+# =================================================================================================
+# v0.X.X  - MAIN TEST BUILD (DEBUGING);
+# v2.X.X  - major functionality update;
+# vX.2.X  - minor functionality update;
+# vX.X.3a - patch functionality update, as bug or error fixing (states: a - alpha, b - beta, r - release)
+# =================================================================================================
 import sys
 import os
 from text_restorer import TextRestorer
@@ -19,5 +26,39 @@ def main():
     restorer = TextRestorer(vocabulary_path)
     print("[✅] Словник завантажено.")
 
-    # Read corrupted text
+    # Use corpus if exist.
+    corpus_path = os.path.join(os.path.dirname(__file__), 'corpus_text.txt')
+    if os.path.exists(corpus_path):
+        with open(corpus_path, 'r', encoding='utf-8') as corpus_file:
+            corpus_text = corpus_file.read()
+            restorer.vocabulary_mgr.calculate_bigrams(corpus_text)
+        print("[📚] Корпус для біграм завантажено.")
+    else:
+        print("[ℹ️] Увага: файл 'corpus_text.txt' не знайдено. Біграми не будуть використовуватись.")
+
+    # Read corrupted text (from file)
     corrupted_text = ""
+    try:
+        with open(input_text_filename, 'r', encoding='utf-8') as f:
+            corrupted_text = f.read().strip()
+        print(f"\n[📄] Вхідний текст успішно зчитано з файлу '{input_text_filename}'")
+        print(f"Пошкоджений текст (перші 100 символів): {corrupted_text[:100]}...")
+    except FileNotFoundError:
+        print(f"[❌] Помилка: Вхідний файл '{input_text_filename}' не знайдено.")
+        print(f"Будь ласка, створіть файл '{input_text_filename}' у тій же директорії та вставте туди пошкоджений текст.")
+        sys.exit(1) # EXIT 1 (if there is no file))
+    except Exception as e:
+        print(f"[❌] Помилка під час зчитування вхідного файлу: {e}")
+        sys.exit(1) # EXIT 1 (if there is trouble to read file)
+
+    print("\n[🔍] Спроба відновлення тексту...")
+    final_recovered_text = restorer.restore_text(corrupted_text)
+    print(f"\nВідновлений текст:\n{final_recovered_text}")
+
+    # Save result to output file:
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        f.write(final_recovered_text)
+    print(f"\n[💾] Відновлений текст збережено у файл '{output_filename}'")
+
+if __name__ == "__main__":
+    main()
